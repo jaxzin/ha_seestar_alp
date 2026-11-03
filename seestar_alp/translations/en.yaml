@@ -1,0 +1,17 @@
+configuration:
+  scopes:
+    name: Telescopes
+    description: >-
+      One entry per Seestar: a name and the telescope's IP address or hostname on
+      your LAN. Clients such as ha-seestar name their Home Assistant device after
+      `name`, so pick a stable one.
+  interop_pem:
+    name: Interop auth key (firmware 7.18+)
+    description: >-
+      The RSA private key for the firmware 7.18+ challenge-response handshake.
+      Paste the PEM, the PEM with literal \n for newlines, or its base64. Leave
+      blank to run unauthenticated (events still flow; commands and device state
+      are refused).
+  log_level:
+    name: Log level
+    description: Verbosity of the driver log. Default info.

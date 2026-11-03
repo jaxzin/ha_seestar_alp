@@ -1,0 +1,64 @@
+# Lint the add-on and build its image for both architectures. Nothing is
+# published: the add-on is pre-release and Home Assistant builds it on the device.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: ShellCheck the s6 scripts
+        run: >-
+          shellcheck -s bash
+          seestar_alp/rootfs/etc/s6-overlay/scripts/init-config
+          seestar_alp/rootfs/etc/s6-overlay/s6-rc.d/seestar-alp/run
+
+      - name: Hadolint
+        uses: hadolint/hadolint-action@v3.1.0
+        with:
+          dockerfile: seestar_alp/Dockerfile
+
+      - name: Validate config.yaml keys
+        run: |
+          python3 - <<'EOF'
+          import yaml
+          cfg = yaml.safe_load(open("seestar_alp/config.yaml"))
+          for key in ("name", "version", "slug", "description", "arch"):
+              assert key in cfg, f"config.yaml missing required key {key!r}"
+          assert set(cfg["options"]) == set(cfg["schema"]), "options/schema keys differ"
+          print("config.yaml ok:", cfg["slug"], cfg["version"])
+          EOF
+
+  build:
+    name: Build ${{ matrix.arch }}
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      matrix:
+        include:
+          - arch: amd64
+            runner: ubuntu-latest
+            platform: linux/amd64
+          - arch: aarch64
+            runner: ubuntu-24.04-arm
+            platform: linux/arm64
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - name: Build (no push)
+        uses: docker/build-push-action@v6
+        with:
+          context: seestar_alp
+          platforms: ${{ matrix.platform }}
+          push: false
+          tags: ha_seestar_alp:ci-${{ matrix.arch }}

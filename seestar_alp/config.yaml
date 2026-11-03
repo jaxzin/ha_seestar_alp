@@ -1,0 +1,47 @@
+# Home Assistant add-on manifest for the seestar_alp ASCOM Alpaca driver.
+name: Seestar Alpaca driver (seestar_alp)
+version: "0.1.0"
+slug: seestar_alp
+description: >-
+  The seestar_alp ASCOM Alpaca driver and Simple Seestar Controller web UI for
+  ZWO Seestar telescopes.
+url: https://github.com/jaxzin/ha_seestar_alp
+stage: experimental
+arch:
+  - aarch64
+  - amd64
+
+# The base image runs s6-overlay v3 as PID 1; the Docker default init must be off.
+init: false
+
+# Start before Home Assistant Core and before clients such as the ha-seestar
+# bridge (startup: application) so the driver is usually up when they look.
+startup: services
+
+# The Simple Seestar Controller (SSC) web UI, in the HA sidebar.
+ingress: true
+ingress_port: 5432
+panel_icon: mdi:telescope
+panel_title: Seestar ALP
+
+# Off by default (null): enable to reach the driver from outside Home Assistant.
+# Other add-ons reach every in-container port over the Supervisor network
+# without publishing anything.
+ports:
+  "5555/tcp": null
+  "7556/tcp": null
+ports_description:
+  "5555/tcp": ASCOM Alpaca API, for clients outside Home Assistant (NINA, the SSC CLI)
+  "7556/tcp": Imaging server (live view stream), for clients outside Home Assistant
+
+options:
+  scopes: []
+  interop_pem: ""
+  log_level: info
+
+schema:
+  scopes:
+    - name: str
+      host: str
+  interop_pem: password?
+  log_level: list(trace|debug|info|notice|warning|error|fatal)

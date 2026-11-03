@@ -1,0 +1,12 @@
+#!/command/with-contenv bashio
+# shellcheck shell=bash
+# ==============================================================================
+# seestar-alp longrun — the seestar_alp ASCOM Alpaca driver.
+#
+# init-config has already rendered device/config.toml (scopes, ports, logging,
+# and the interop PEM path when one is configured).
+# ==============================================================================
+
+bashio::log.info "Starting seestar_alp."
+cd /app/seestar_alp || bashio::exit.nok "seestar_alp directory missing from image."
+exec python3 root_app.py

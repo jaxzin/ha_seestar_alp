@@ -1,0 +1,108 @@
+#!/command/with-contenv bashio
+# shellcheck shell=bash
+# ==============================================================================
+# init-config oneshot — runs once before the driver starts.
+#
+# Renders seestar_alp's device/config.toml from the add-on options: the scope
+# list, fixed in-container ports, logging, and (when set) the firmware >= 7.18
+# interop PEM, materialized to a root-only file on ephemeral /run.
+# ==============================================================================
+set -euo pipefail
+
+readonly CONFIG_TOML_PATH="/app/seestar_alp/device/config.toml"
+readonly INTEROP_PEM_PATH="/run/seestar/seestar_client_key.pem"
+
+# Bind to all interfaces: other add-ons (and LAN clients through published
+# ports) reach Alpaca, imaging and the web UI on these in-container ports.
+readonly BIND_ADDRESS="0.0.0.0"
+readonly ALPACA_PORT=5555
+readonly IMAGING_PORT=7556
+readonly WEBUI_PORT=5432
+
+if ! bashio::config.has_value 'scopes'; then
+    bashio::exit.nok "No telescope configured: add at least one entry under 'scopes'."
+fi
+
+# seestar_alp reads [logging] log_level uppercase via logging.getLevelName; map
+# the HA-only levels trace/notice/fatal onto the nearest stdlib level first.
+log_level_raw="$(bashio::config 'log_level' 'info' | tr '[:upper:]' '[:lower:]')"
+case "${log_level_raw}" in
+    trace) log_level_raw='debug' ;;
+    notice) log_level_raw='info' ;;
+    fatal) log_level_raw='critical' ;;
+esac
+log_level_upper="$(printf '%s' "${log_level_raw}" | tr '[:lower:]' '[:upper:]')"
+
+# Interop PEM: real newlines, literal "\n" (the option field is single-line),
+# or base64 of the PEM. Never logged.
+has_interop_pem=false
+if bashio::config.has_value 'interop_pem'; then
+    pem="$(bashio::config 'interop_pem')"
+    pem="${pem//\\n/$'\n'}"
+    if [[ "${pem}" != *"-----BEGIN"* ]]; then
+        pem="$(printf '%s' "${pem}" | base64 -d 2>/dev/null || true)"
+    fi
+    if [[ "${pem}" != *"-----BEGIN"*"PRIVATE KEY-----"* ]]; then
+        bashio::exit.nok \
+            "The 'interop_pem' option is set but is not a PEM private key (nor base64 of one)."
+    fi
+    mkdir -p "$(dirname "${INTEROP_PEM_PATH}")"
+    (umask 077 && printf '%s\n' "${pem}" > "${INTEROP_PEM_PATH}")
+    unset pem
+    has_interop_pem=true
+    bashio::log.info "Interop PEM supplied; firmware 7.18+ authentication enabled."
+else
+    bashio::log.warning \
+        "No interop_pem set: on firmware >= 7.18 device state and all commands will be refused."
+fi
+
+toml_escape() {
+    local value="${1}"
+    value="${value//\\/\\\\}"
+    value="${value//\"/\\\"}"
+    printf '%s' "${value}"
+}
+
+bashio::log.info "Rendering config.toml for $(bashio::config 'scopes | length') scope(s)."
+mkdir -p "$(dirname "${CONFIG_TOML_PATH}")"
+{
+    echo "[network]"
+    echo "ip_address = '${BIND_ADDRESS}'"
+    echo "port = ${ALPACA_PORT}"
+    echo "imgport = ${IMAGING_PORT}"
+    echo ""
+    echo "[webui_settings]"
+    echo "uiport = ${WEBUI_PORT}"
+    echo ""
+    echo "[seestar_initialization]"
+    # Keep only good frames by default (upstream defaults save_all_frames on).
+    echo "save_all_frames = false"
+    if [ "${has_interop_pem}" = true ]; then
+        echo "interop_pem = '${INTEROP_PEM_PATH}'"
+    fi
+    echo ""
+    # Log to the add-on Log tab instead of a file.
+    echo "[logging]"
+    echo "log_to_stdout = true"
+    echo "log_level = '${log_level_upper}'"
+} > "${CONFIG_TOML_PATH}"
+chmod 0640 "${CONFIG_TOML_PATH}"
+
+# One [[seestars]] block per scope; device_num is 1-based and stable across
+# restarts. Clients derive the HA device from `name`, so keep names stable.
+device_num=1
+for index in $(bashio::config 'scopes|keys'); do
+    name="$(bashio::config "scopes[${index}].name")"
+    host="$(bashio::config "scopes[${index}].host")"
+    {
+        echo ""
+        echo "[[seestars]]"
+        echo "name = \"$(toml_escape "${name}")\""
+        echo "ip_address = \"$(toml_escape "${host}")\""
+        echo "device_num = ${device_num}"
+    } >> "${CONFIG_TOML_PATH}"
+    bashio::log.info "  scope ${device_num}: '${name}' -> ${host}"
+    device_num=$((device_num + 1))
+done
+
+bashio::log.info "Wrote ${CONFIG_TOML_PATH}."
