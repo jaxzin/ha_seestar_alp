@@ -1,0 +1,11 @@
+#!/command/with-contenv bashio
+# shellcheck shell=bash
+# ==============================================================================
+# ingress-proxy longrun — the Home Assistant ingress shim in front of the SSC
+# web UI. Home Assistant serves the UI under /api/hassio_ingress/<token>/ and
+# names that prefix in X-Ingress-Path; seestar_alp understands the standard
+# X-Forwarded-Prefix, so nginx renames the header and proxies to SSC on 5432.
+# ==============================================================================
+
+bashio::log.info "Starting the ingress proxy (X-Ingress-Path -> X-Forwarded-Prefix)."
+exec nginx -c /etc/nginx/ingress.conf

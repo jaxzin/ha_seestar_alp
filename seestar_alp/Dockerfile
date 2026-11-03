@@ -6,18 +6,20 @@
 # image is multi-arch and brings s6-overlay v3 + bashio.
 FROM ghcr.io/home-assistant/base-debian:trixie-2026.10.3
 
-# seestar_alp source. jaxzin/seestar_alp at deploy-2026.11.03 is upstream
+# seestar_alp source. jaxzin/seestar_alp at deploy-2026.11.03.2 is upstream
 # v3.3.1 plus smart-underworld/seestar_alp#789 (mount mode exposed only once
-# confirmed) and #790 (serialized command ids / socket writes). Move to an
-# upstream tag once both ship in a release.
+# confirmed), #790 (serialized command ids / socket writes) and serving the web
+# UI under a reverse-proxy sub-path (X-Forwarded-Prefix). Move to an upstream
+# tag once these ship in a release.
 ARG SEESTAR_ALP_REPO=https://github.com/jaxzin/seestar_alp
-ARG SEESTAR_ALP_REF=deploy-2026.11.03
+ARG SEESTAR_ALP_REF=deploy-2026.11.03.2
 
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
 # Interpreter + the shared libs the manylinux wheels don't bundle: opencv needs
 # libGL and libgthread (libglib2.0-0t64 on trixie). git clones the source and
-# serves the pyindi git requirement.
+# serves the pyindi git requirement. nginx is the ingress shim (see
+# rootfs/etc/nginx/ingress.conf).
 # hadolint ignore=DL3008
 RUN apt-get update \
     && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
@@ -26,6 +28,7 @@ RUN apt-get update \
         python3-venv \
         libgl1 \
         libglib2.0-0t64 \
+        nginx \
     && rm -rf /var/lib/apt/lists/*
 
 # Debian's python is PEP 668 externally-managed: install into a venv first on
