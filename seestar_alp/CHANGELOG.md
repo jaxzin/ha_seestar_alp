@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.3 (unreleased)
+
+- Prebuilt image: Home Assistant now pulls `ghcr.io/jaxzin/ha_seestar_alp`
+  (amd64 and aarch64, Cosign-signed) instead of building the add-on on the
+  device. No functional change from 0.1.2.
+
 ## 0.1.2 (unreleased)
 
 - seestar_alp `deploy-2026.11.03.3`: the URL prefix is applied exactly once,

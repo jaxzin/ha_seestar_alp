@@ -5,8 +5,9 @@ A Home Assistant add-on repository with one add-on: **Seestar Alpaca driver
 ASCOM Alpaca driver and Simple Seestar Controller web UI for ZWO Seestar
 telescopes.
 
-> **Status: experimental, pre-release.** Not yet published as a prebuilt image;
-> Home Assistant builds it on the device when you install it.
+> **Status: experimental, pre-release.** Home Assistant pulls a prebuilt
+> multi-arch image, `ghcr.io/jaxzin/ha_seestar_alp`, published by CI from
+> `main` for each `version` in `seestar_alp/config.yaml`.
 
 Pair it with [ha-seestar](https://github.com/jaxzin/ha-seestar) for Seestar
 telemetry, a preview camera and controls as Home Assistant entities. ha-seestar
@@ -28,10 +29,11 @@ The add-on image is built from:
 - this repository (the add-on packaging: `seestar_alp/`), and
 - seestar_alp source at the repository and tag pinned in
   [`seestar_alp/Dockerfile`](seestar_alp/Dockerfile) (`SEESTAR_ALP_REPO`,
-  `SEESTAR_ALP_REF`), currently `jaxzin/seestar_alp` at `deploy-2026.11.03`:
-  upstream v3.3.1 plus two changes submitted upstream
+  `SEESTAR_ALP_REF`), currently `jaxzin/seestar_alp` at `deploy-2026.11.03.3`:
+  upstream v3.3.1 plus three changes submitted upstream
   ([#789](https://github.com/smart-underworld/seestar_alp/pull/789),
-  [#790](https://github.com/smart-underworld/seestar_alp/pull/790)).
+  [#790](https://github.com/smart-underworld/seestar_alp/pull/790),
+  [#791](https://github.com/smart-underworld/seestar_alp/pull/791)).
 
 seestar_alp is © Kai Yung and the smart-underworld contributors. Its own license
 files are preserved in the image under `/app/seestar_alp/`.

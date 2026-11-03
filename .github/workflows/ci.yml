@@ -1,5 +1,7 @@
-# Lint the add-on and build its image for both architectures. Nothing is
-# published: the add-on is pre-release and Home Assistant builds it on the device.
+# Lint the add-on and build its image for both architectures on every PR; on
+# main, also publish it to GHCR as the multi-arch image config.yaml's `image`
+# names, tagged with config.yaml's `version` (and `latest`). A version that is
+# already published is never overwritten: bump `version` to release.
 name: CI
 
 on:
@@ -40,25 +42,99 @@ jobs:
           print("config.yaml ok:", cfg["slug"], cfg["version"])
           EOF
 
-  build:
-    name: Build ${{ matrix.arch }}
-    runs-on: ${{ matrix.runner }}
-    strategy:
-      matrix:
-        include:
-          - arch: amd64
-            runner: ubuntu-latest
-            platform: linux/amd64
-          - arch: aarch64
-            runner: ubuntu-24.04-arm
-            platform: linux/arm64
+  prepare:
+    name: Prepare
+    runs-on: ubuntu-latest
+    outputs:
+      architectures: ${{ steps.info.outputs.architectures }}
+      image_name: ${{ steps.info.outputs.image_name }}
+      registry_prefix: ${{ steps.info.outputs.registry_prefix }}
+      version: ${{ steps.info.outputs.version }}
+      name: ${{ steps.info.outputs.name }}
+      description: ${{ steps.info.outputs.description }}
+      matrix: ${{ steps.matrix.outputs.matrix }}
     steps:
       - uses: actions/checkout@v4
-      - uses: docker/setup-buildx-action@v3
-      - name: Build (no push)
-        uses: docker/build-push-action@v6
+
+      - name: Read config.yaml
+        id: info
+        run: |
+          python3 - <<'EOF' >> "$GITHUB_OUTPUT"
+          import json
+          import yaml
+          cfg = yaml.safe_load(open("seestar_alp/config.yaml"))
+          prefix, _, name = cfg["image"].rpartition("/")
+          print(f"architectures={json.dumps(cfg['arch'])}")
+          print(f"image_name={name}")
+          print(f"registry_prefix={prefix}")
+          print(f"version={cfg['version']}")
+          print(f"name={cfg['name']}")
+          print(f"description={' '.join(cfg['description'].split())}")
+          EOF
+
+      - name: Build matrix
+        id: matrix
+        uses: home-assistant/builder/actions/prepare-multi-arch-matrix@2026.09.0
         with:
-          context: seestar_alp
-          platforms: ${{ matrix.platform }}
-          push: false
-          tags: ha_seestar_alp:ci-${{ matrix.arch }}
+          architectures: ${{ steps.info.outputs.architectures }}
+          image-name: ${{ steps.info.outputs.image_name }}
+          registry-prefix: ${{ steps.info.outputs.registry_prefix }}
+
+  build:
+    name: Build ${{ matrix.arch }}
+    needs: [lint, prepare]
+    runs-on: ${{ matrix.os }}
+    permissions:
+      contents: read
+      id-token: write   # Cosign keyless signing
+      packages: write
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.prepare.outputs.matrix) }}
+    env:
+      PUBLISH: ${{ github.event_name != 'pull_request' && github.ref == 'refs/heads/main' }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Build image (pushed on main only)
+        uses: home-assistant/builder/actions/build-image@2026.09.0
+        with:
+          arch: ${{ matrix.arch }}
+          context: ./seestar_alp
+          image: ${{ matrix.image }}
+          image-tags: |
+            ${{ needs.prepare.outputs.version }}
+            latest
+          version: ${{ needs.prepare.outputs.version }}
+          labels: |
+            io.hass.type=app
+            io.hass.name=${{ needs.prepare.outputs.name }}
+            io.hass.description=${{ needs.prepare.outputs.description }}
+            io.hass.url=https://github.com/${{ github.repository }}
+            org.opencontainers.image.source=https://github.com/${{ github.repository }}
+          container-registry-password: ${{ secrets.GITHUB_TOKEN }}
+          push: ${{ env.PUBLISH }}
+          skip-existing: ${{ needs.prepare.outputs.version }}
+
+  manifest:
+    name: Publish multi-arch manifest
+    needs: [prepare, build]
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      packages: write
+    steps:
+      - name: Publish multi-arch manifest
+        uses: home-assistant/builder/actions/publish-multi-arch-manifest@2026.09.0
+        with:
+          architectures: ${{ needs.prepare.outputs.architectures }}
+          image-name: ${{ needs.prepare.outputs.image_name }}
+          registry-prefix: ${{ needs.prepare.outputs.registry_prefix }}
+          image-tags: |
+            ${{ needs.prepare.outputs.version }}
+            latest
+          container-registry-password: ${{ secrets.GITHUB_TOKEN }}
+          skip-existing: ${{ needs.prepare.outputs.version }}
