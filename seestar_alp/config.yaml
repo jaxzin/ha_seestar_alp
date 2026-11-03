@@ -1,6 +1,6 @@
 # Home Assistant add-on manifest for the seestar_alp ASCOM Alpaca driver.
 name: Seestar Alpaca driver (seestar_alp)
-version: "0.1.0"
+version: "0.1.1"
 slug: seestar_alp
 description: >-
   The seestar_alp ASCOM Alpaca driver and Simple Seestar Controller web UI for
@@ -18,9 +18,11 @@ init: false
 # bridge (startup: application) so the driver is usually up when they look.
 startup: services
 
-# The Simple Seestar Controller (SSC) web UI, in the HA sidebar.
+# The Simple Seestar Controller (SSC) web UI, in the HA sidebar. Ingress reaches
+# the nginx shim on 8099, which forwards to SSC on 5432 with the ingress path as
+# X-Forwarded-Prefix (rootfs/etc/nginx/ingress.conf).
 ingress: true
-ingress_port: 5432
+ingress_port: 8099
 panel_icon: mdi:telescope
 panel_title: Seestar ALP
 

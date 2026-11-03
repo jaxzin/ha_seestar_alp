@@ -44,7 +44,7 @@ and its community.
 
 | Port | What | Reachable from |
 |---|---|---|
-| 5432 | SSC web UI | Home Assistant ingress (sidebar) |
+| 5432 | SSC web UI | Home Assistant ingress (sidebar), via the built-in proxy on 8099 |
 | 5555 | ASCOM Alpaca API | Other add-ons always; your LAN if you enable the port |
 | 7556 | Imaging server (live view stream) | Other add-ons always; your LAN if you enable the port |
 | 32227/udp | ASCOM Alpaca discovery | Other add-ons on the Supervisor network |
