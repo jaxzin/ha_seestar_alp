@@ -13,6 +13,11 @@ Pair it with [ha-seestar](https://github.com/jaxzin/ha-seestar) for Seestar
 telemetry, a preview camera and controls as Home Assistant entities. ha-seestar
 finds this driver automatically via ASCOM Alpaca discovery.
 
+> **Setting up the whole Seestar stack?** Start at
+> [ha-seestar → Quick Start](https://github.com/jaxzin/ha-seestar#quick-start-home-assistant-os--supervised):
+> it installs this driver, the bridge add-on, the dashboard card and the
+> optional Seestar Sync archiver in one pass.
+
 ## Install
 
 **Settings → Add-ons → Add-on Store → ⋮ → Repositories**, add
