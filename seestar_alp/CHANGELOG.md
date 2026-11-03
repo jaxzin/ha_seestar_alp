@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.2 (unreleased)
+
+- seestar_alp `deploy-2026.11.03.3`: the URL prefix is applied exactly once,
+  when a page is rendered, so a prefix that looks like a page path (for
+  example `/1`) no longer drops a path segment.
+
 ## 0.1.1 (unreleased)
 
 - Fix the SSC web UI in the Home Assistant sidebar: it loaded without its CSS
