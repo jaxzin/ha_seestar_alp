@@ -1,6 +1,6 @@
 # Home Assistant add-on manifest for the seestar_alp ASCOM Alpaca driver.
 name: Seestar Alpaca driver (seestar_alp)
-version: "0.1.3"
+version: "0.1.4"
 slug: seestar_alp
 description: >-
   The seestar_alp ASCOM Alpaca driver and Simple Seestar Controller web UI for

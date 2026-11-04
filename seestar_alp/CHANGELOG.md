@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.1.4 (unreleased)
+
+- seestar_alp `deploy-2026.11.04`: rebased onto upstream main (adds the local
+  horizon profile, planner location fixes and a clean error for a malformed
+  `config.toml`), with the upstream review fixes for #789, #790 and #791:
+  - Mount mode is re-confirmed after a reconnect, and only an integer or
+    boolean `equ_mode` confirms it.
+  - Simultaneous send failures share one reconnect and one auth handshake;
+    commands wait for auth to finish, and a half-written message is never
+    followed by another on the same socket.
+  - The live view relay works with urllib3 1.26 and times out a dead upstream
+    after 30 s; an empty `X-Forwarded-Prefix` falls back to the configured
+    root path.
+
 ## 0.1.3 (unreleased)
 
 - Prebuilt image: Home Assistant now pulls `ghcr.io/jaxzin/ha_seestar_alp`
