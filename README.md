@@ -40,11 +40,12 @@ The add-on image is built from:
 - this repository (the add-on packaging: `seestar_alp/`), and
 - seestar_alp source at the repository and tag pinned in
   [`seestar_alp/Dockerfile`](seestar_alp/Dockerfile) (`SEESTAR_ALP_REPO`,
-  `SEESTAR_ALP_REF`), currently `jaxzin/seestar_alp` at `deploy-2026.11.04`:
+  `SEESTAR_ALP_REF`), currently `jaxzin/seestar_alp` at `deploy-2026.11.10`:
   upstream main plus three changes submitted upstream
   ([#789](https://github.com/smart-underworld/seestar_alp/pull/789),
   [#790](https://github.com/smart-underworld/seestar_alp/pull/790),
-  [#791](https://github.com/smart-underworld/seestar_alp/pull/791)).
+  [#791](https://github.com/smart-underworld/seestar_alp/pull/791)) and a cached
+  stacked-image endpoint (`feat/stack-snapshot`).
 
 seestar_alp is © Kai Yung and the smart-underworld contributors. Its own license
 files are preserved in the image under `/app/seestar_alp/`.
