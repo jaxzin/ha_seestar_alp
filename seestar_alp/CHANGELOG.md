@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.1.5 (unreleased)
+
+- seestar_alp `deploy-2026.11.10.1`: `deploy-2026.11.04` plus a cached
+  stacked-image endpoint, `GET /<device>/snapshot.jpg` on the imaging port
+  (7556). While a client reads it, it serves the latest stacked image of the
+  stack in progress as one JPEG (at most 1280 px), labelled with its frame
+  count, and keeps fetching stacked images even if the SSC live page was never
+  opened. ha-seestar's **Live view** camera uses it to show a stack started
+  from the Seestar app as it builds, without the per-request processing loops
+  of `/vid` that could exhaust the host's memory. Nothing changes for clients
+  that don't use the endpoint.
+- The driver caps glibc malloc arenas (`MALLOC_ARENA_MAX=2`), so its memory
+  stays flat instead of creeping up with each image it processes.
+
 ## 0.1.4 (unreleased)
 
 - seestar_alp `deploy-2026.11.04`: rebased onto upstream main (adds the local
